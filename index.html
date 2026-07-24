@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Ultimate Snake</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-family:Arial;
+    color:white;
+    overflow:hidden;
+
+    background:
+    linear-gradient(45deg,#050505,#003300,#111);
+    background-size:400% 400%;
+    animation:bg 10s infinite alternate;
+}
+
+
+@keyframes bg{
+
+from{
+background-position:left;
+}
+
+to{
+background-position:right;
+}
+
+}
+
+
+h1{
+
+font-size:45px;
+color:#00ff66;
+text-shadow:
+0 0 10px lime,
+0 0 30px lime;
+
+}
+
+
+canvas{
+
+background:#000;
+
+border:5px solid lime;
+
+border-radius:20px;
+
+box-shadow:
+0 0 30px lime,
+inset 0 0 20px green;
+
+}
+
+
+#info{
+
+font-size:22px;
+margin:15px;
+
+}
+
+
+button{
+
+padding:12px 25px;
+
+margin:5px;
+
+border:none;
+
+border-radius:10px;
+
+font-size:18px;
+
+background:#00ff66;
+
+cursor:pointer;
+
+}
+
+
+button:hover{
+
+background:white;
+
+}
+
+
+
+.mobile button{
+
+background:#111;
+
+color:white;
+
+border:2px solid lime;
+
+font-size:25px;
+
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<h1>🐍 Ultimate Snake 🍎</h1>
+
+
+<canvas id="game"
+width="500"
+height="500">
+</canvas>
+
+
+<div id="info">
+
+Score:
+<span id="score">0</span>
+
+|
+
+High:
+<span id="high">0</span>
+
+</div>
+
+
+<button onclick="restart()">
+Restart
+</button>
+
+
+<div class="mobile">
+
+<button onclick="move('up')">⬆️</button><br>
+
+<button onclick="move('left')">⬅️</button>
+
+<button onclick="move('down')">⬇️</button>
+
+<button onclick="move('right')">➡️</button>
+
+</div>
+
+
+
+<script>
+
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+
+const size=25;
+const grid=20;
+
+
+let snake;
+let apple;
+
+let direction;
+let nextDirection;
+
+let score=0;
+
+let high=
+localStorage.getItem("snakeHigh")||0;
+
+let speed;
+
+let gameOver=false;
+let paused=false;
+
+let particles=[];
+
+
+function restart(){
+
+
+snake=[
+{x:10,y:10}
+];
+
+
+direction={
+x:1,
+y:0
+};
+
+
+nextDirection=direction;
+
+
+score=0;
+
+speed=120;
+
+gameOver=false;
+
+paused=false;
+
+
+createApple();
+
+updateScore();
+
+
+}
+
+
+
+function updateScore(){
+
+document.getElementById("score").innerHTML=score;
+
+document.getElementById("high").innerHTML=high;
+
+}
+
+
+
+function createApple(){
+
+
+do{
+
+apple={
+
+x:Math.floor(Math.random()*grid),
+
+y:Math.floor(Math.random()*grid)
+
+};
+
+
+}
+
+while(
+snake.some(
+s=>s.x==apple.x &&
+s.y==apple.y
+)
+);
+
+
+}
+
+
+
+
+function move(dir){
+
+
+if(dir=="up" && direction.y!=1)
+
+nextDirection={x:0,y:-1};
+
+
+if(dir=="down" && direction.y!=-1)
+
+nextDirection={x:0,y:1};
+
+
+
+if(dir=="left" && direction.x!=1)
+
+nextDirection={x:-1,y:0};
+
+
+
+if(dir=="right" && direction.x!=-1)
+
+nextDirection={x:1,y:0};
+
+
+
+}
+
+
+
+
+document.addEventListener(
+"keydown",
+e=>{
+
+
+let k=e.key.toLowerCase();
+
+
+if(k=="w"||k=="arrowup")
+move("up");
+
+
+if(k=="s"||k=="arrowdown")
+move("down");
+
+
+if(k=="a"||k=="arrowleft")
+move("left");
+
+
+if(k=="d"||k=="arrowright")
+move("right");
+
+
+
+if(e.code=="Space")
+
+paused=!paused;
+
+
+
+});
+
+
+
+
+
+function update(){
+
+
+if(gameOver||paused)
+return;
+
+
+direction=nextDirection;
+
+
+let head={
+
+x:snake[0].x+direction.x,
+
+y:snake[0].y+direction.y
+
+};
+
+
+
+if(
+
+head.x<0||
+head.y<0||
+head.x>=grid||
+head.y>=grid
+
+)
+
+return end();
+
+
+
+if(
+
+snake.some(
+s=>s.x==head.x &&
+s.y==head.y
+)
+
+)
+
+return end();
+
+
+
+snake.unshift(head);
+
+
+
+if(
+
+head.x==apple.x &&
+head.y==apple.y
+
+){
+
+
+score++;
+
+
+if(score>high){
+
+high=score;
+
+localStorage.setItem(
+"snakeHigh",
+high
+);
+
+}
+
+
+speed=Math.max(
+50,
+speed-5
+);
+
+
+crunch();
+
+explode(
+apple.x*size+12,
+apple.y*size+12
+);
+
+
+createApple();
+
+updateScore();
+
+
+}
+
+else{
+
+
+snake.pop();
+
+
+}
+
+
+
+}
+
+
+
+
+function draw(){
+
+
+ctx.clearRect(
+0,
+0,
+500,
+500
+);
+
+
+
+// apple
+
+
+ctx.shadowColor="red";
+
+ctx.shadowBlur=25;
+
+
+ctx.fillStyle="red";
+
+
+ctx.beginPath();
+
+ctx.arc(
+
+apple.x*size+12,
+
+apple.y*size+12,
+
+10,
+
+0,
+
+Math.PI*2
+
+);
+
+
+ctx.fill();
+
+
+ctx.shadowBlur=0;
+
+
+
+
+// snake
+
+
+snake.forEach((s,i)=>{
+
+
+ctx.fillStyle=
+i==0?
+"#00ffff":
+"#00ff55";
+
+
+ctx.beginPath();
+
+
+ctx.roundRect(
+
+s.x*size,
+
+s.y*size,
+
+size,
+
+size,
+
+8
+
+);
+
+
+ctx.fill();
+
+
+});
+
+
+
+
+// particles
+
+
+particles.forEach(p=>{
+
+
+ctx.fillStyle=p.color;
+
+
+ctx.fillRect(
+p.x,
+p.y,
+5,
+5
+);
+
+
+p.x+=p.dx;
+
+p.y+=p.dy;
+
+p.life--;
+
+
+});
+
+
+particles=
+particles.filter(
+p=>p.life>0
+);
+
+
+
+}
+
+
+
+
+function explode(x,y){
+
+
+for(let i=0;i<25;i++){
+
+
+particles.push({
+
+x:x,
+
+y:y,
+
+dx:(Math.random()-0.5)*8,
+
+dy:(Math.random()-0.5)*8,
+
+life:30,
+
+color:"yellow"
+
+});
+
+
+}
+
+
+}
+
+
+
+
+function crunch(){
+
+
+let audio=
+new AudioContext();
+
+
+let osc=
+audio.createOscillator();
+
+
+let gain=
+audio.createGain();
+
+
+
+osc.type="square";
+
+osc.frequency.value=180;
+
+
+gain.gain.setValueAtTime(
+0.3,
+audio.currentTime
+);
+
+
+gain.gain.exponentialRampToValueAtTime(
+0.01,
+audio.currentTime+0.15
+);
+
+
+osc.connect(gain);
+
+gain.connect(
+audio.destination
+);
+
+
+osc.start();
+
+osc.stop(
+audio.currentTime+0.15
+);
+
+
+
+}
+
+
+
+
+function end(){
+
+
+gameOver=true;
+
+
+setTimeout(()=>{
+
+alert(
+"💀 Game Over!\nScore: "+score
+);
+
+
+restart();
+
+
+},100);
+
+
+}
+
+
+
+
+
+let last=0;
+
+
+function loop(time){
+
+
+if(time-last>speed){
+
+update();
+
+last=time;
+
+}
+
+
+draw();
+
+
+requestAnimationFrame(loop);
+
+
+}
+
+
+
+restart();
+
+requestAnimationFrame(loop);
+
+
+
+</script>
+
+</body>
+</html>
